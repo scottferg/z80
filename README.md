@@ -1,6 +1,7 @@
-# Z80 - A Zilog Z80 emulator written in Go
+# Z80 - A GameBoy Z80 emulator written in Go
 
-The z80 package implements a Zilog Z80 emulator written in Go. The CPU
+This version of the z80 package implements a Sharp LR35902 emulator, the CPU found in the GameBoy. 
+If you are looking for a traditional Z80, you will want to use the [main fork](https://github.com/remogatto/z80) of this repo. The CPU
 emulation code is generated using a modified version of the
 <tt>z80.pl</tt> script shipped with
 [FUSE](http://fuse-emulator.sourceforge.net/). The script has been
