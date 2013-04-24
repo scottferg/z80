@@ -47,8 +47,8 @@ func initOpcodes() {
 	OpcodesMap[0x06] = instr__LD_B_NN
 	/* RLCA */
 	OpcodesMap[0x07] = instr__RLCA
-	/* EX AF,AF' */
-	OpcodesMap[0x08] = instr__EX_AF_AF
+	/* LD (nn),SP */
+	OpcodesMap[0x08] = instr__LD_iNNNN_SP
 	/* ADD HL,BC */
 	OpcodesMap[0x09] = instr__ADD_HL_BC
 	/* LD A,(BC) */
@@ -63,8 +63,8 @@ func initOpcodes() {
 	OpcodesMap[0x0e] = instr__LD_C_NN
 	/* RRCA */
 	OpcodesMap[0x0f] = instr__RRCA
-	/* DJNZ offset */
-	OpcodesMap[0x10] = instr__DJNZ_OFFSET
+	/* STOP */
+	OpcodesMap[0x10] = instr__STOP
 	/* LD DE,nnnn */
 	OpcodesMap[0x11] = instr__LD_DE_NNNN
 	/* LD (DE),A */
@@ -99,8 +99,8 @@ func initOpcodes() {
 	OpcodesMap[0x20] = instr__JR_NZ_OFFSET
 	/* LD HL,nnnn */
 	OpcodesMap[0x21] = instr__LD_HL_NNNN
-	/* LD (nnnn),HL */
-	OpcodesMap[0x22] = instr__LD_iNNNN_HL
+	/* LDI (HL),A */
+	OpcodesMap[0x22] = instr__LDI_iHL_A
 	/* INC HL */
 	OpcodesMap[0x23] = instr__INC_HL
 	/* INC H */
@@ -115,8 +115,8 @@ func initOpcodes() {
 	OpcodesMap[0x28] = instr__JR_Z_OFFSET
 	/* ADD HL,HL */
 	OpcodesMap[0x29] = instr__ADD_HL_HL
-	/* LD HL,(nnnn) */
-	OpcodesMap[0x2a] = instr__LD_HL_iNNNN
+	/* LDI A,(HL) */
+	OpcodesMap[0x2a] = instr__LDI_A_iHL
 	/* DEC HL */
 	OpcodesMap[0x2b] = instr__DEC_HL
 	/* INC L */
@@ -131,8 +131,8 @@ func initOpcodes() {
 	OpcodesMap[0x30] = instr__JR_NC_OFFSET
 	/* LD SP,nnnn */
 	OpcodesMap[0x31] = instr__LD_SP_NNNN
-	/* LD (nnnn),A */
-	OpcodesMap[0x32] = instr__LD_iNNNN_A
+	/* LDD (HL),A */
+	OpcodesMap[0x32] = instr__LDD_iHL_A
 	/* INC SP */
 	OpcodesMap[0x33] = instr__INC_SP
 	/* INC (HL) */
@@ -147,8 +147,8 @@ func initOpcodes() {
 	OpcodesMap[0x38] = instr__JR_C_OFFSET
 	/* ADD HL,SP */
 	OpcodesMap[0x39] = instr__ADD_HL_SP
-	/* LD A,(nnnn) */
-	OpcodesMap[0x3a] = instr__LD_A_iNNNN
+	/* LDD A,(HL) */
+	OpcodesMap[0x3a] = instr__LDD_A_iHL
 	/* DEC SP */
 	OpcodesMap[0x3b] = instr__DEC_SP
 	/* INC A */
@@ -453,8 +453,6 @@ func initOpcodes() {
 	OpcodesMap[0xd1] = instr__POP_DE
 	/* JP NC,nnnn */
 	OpcodesMap[0xd2] = instr__JP_NC_NNNN
-	/* OUT (nn),A */
-	OpcodesMap[0xd3] = instr__OUT_iNN_A
 	/* CALL NC,nnnn */
 	OpcodesMap[0xd4] = instr__CALL_NC_NNNN
 	/* PUSH DE */
@@ -465,80 +463,60 @@ func initOpcodes() {
 	OpcodesMap[0xd7] = instr__RST_10
 	/* RET C */
 	OpcodesMap[0xd8] = instr__RET_C
-	/* EXX */
-	OpcodesMap[0xd9] = instr__EXX
+	/* RETI */
+	OpcodesMap[0xd9] = instr__RETI
 	/* JP C,nnnn */
 	OpcodesMap[0xda] = instr__JP_C_NNNN
-	/* IN A,(nn) */
-	OpcodesMap[0xdb] = instr__IN_A_iNN
 	/* CALL C,nnnn */
 	OpcodesMap[0xdc] = instr__CALL_C_NNNN
-	/* shift DD */
-	OpcodesMap[0xdd] = instr__SHIFT_DD
 	/* SBC A,nn */
 	OpcodesMap[0xde] = instr__SBC_A_NN
 	/* RST 18 */
 	OpcodesMap[0xdf] = instr__RST_18
-	/* RET PO */
-	OpcodesMap[0xe0] = instr__RET_PO
+	/* LD (FF00+n),A */
+	OpcodesMap[0xe0] = instr__LD_iFF00N_A
 	/* POP HL */
 	OpcodesMap[0xe1] = instr__POP_HL
-	/* JP PO,nnnn */
-	OpcodesMap[0xe2] = instr__JP_PO_NNNN
-	/* EX (SP),HL */
-	OpcodesMap[0xe3] = instr__EX_iSP_HL
-	/* CALL PO,nnnn */
-	OpcodesMap[0xe4] = instr__CALL_PO_NNNN
+	/* LD (FF00+C),A */
+	OpcodesMap[0xe2] = instr__LD_iFF00C_A
 	/* PUSH HL */
 	OpcodesMap[0xe5] = instr__PUSH_HL
 	/* AND nn */
 	OpcodesMap[0xe6] = instr__AND_NN
 	/* RST 20 */
 	OpcodesMap[0xe7] = instr__RST_20
-	/* RET PE */
-	OpcodesMap[0xe8] = instr__RET_PE
+	/* ADD SP,dd */
+	OpcodesMap[0xe8] = instr__ADD_SP_DD
 	/* JP HL */
 	OpcodesMap[0xe9] = instr__JP_HL
-	/* JP PE,nnnn */
-	OpcodesMap[0xea] = instr__JP_PE_NNNN
-	/* EX DE,HL */
-	OpcodesMap[0xeb] = instr__EX_DE_HL
-	/* CALL PE,nnnn */
-	OpcodesMap[0xec] = instr__CALL_PE_NNNN
-	/* shift ED */
-	OpcodesMap[0xed] = instr__SHIFT_ED
+	/* LD (nn),A */
+	OpcodesMap[0xea] = instr__LD_iNNNN_A
 	/* XOR A,nn */
 	OpcodesMap[0xee] = instr__XOR_A_NN
 	/* RST 28 */
 	OpcodesMap[0xef] = instr__RST_28
-	/* RET P */
-	OpcodesMap[0xf0] = instr__RET_P
+	/* LD A,(FF00+n) */
+	OpcodesMap[0xf0] = instr__LD_A_iFF00N
 	/* POP AF */
 	OpcodesMap[0xf1] = instr__POP_AF
-	/* JP P,nnnn */
-	OpcodesMap[0xf2] = instr__JP_P_NNNN
+	/* LD A,(FF00+C) */
+	OpcodesMap[0xf2] = instr__LD_A_iFF00C
 	/* DI */
 	OpcodesMap[0xf3] = instr__DI
-	/* CALL P,nnnn */
-	OpcodesMap[0xf4] = instr__CALL_P_NNNN
 	/* PUSH AF */
 	OpcodesMap[0xf5] = instr__PUSH_AF
 	/* OR nn */
 	OpcodesMap[0xf6] = instr__OR_NN
 	/* RST 30 */
 	OpcodesMap[0xf7] = instr__RST_30
-	/* RET M */
-	OpcodesMap[0xf8] = instr__RET_M
+	/* LD HL,SP+dd */
+	OpcodesMap[0xf8] = instr__LD_HL_SPDD
 	/* LD SP,HL */
 	OpcodesMap[0xf9] = instr__LD_SP_HL
-	/* JP M,nnnn */
-	OpcodesMap[0xfa] = instr__JP_M_NNNN
+	/* LD A,(nn) */
+	OpcodesMap[0xfa] = instr__LD_A_iNNNN
 	/* EI */
 	OpcodesMap[0xfb] = instr__EI
-	/* CALL M,nnnn */
-	OpcodesMap[0xfc] = instr__CALL_M_NNNN
-	/* shift FD */
-	OpcodesMap[0xfd] = instr__SHIFT_FD
 	/* CP nn */
 	OpcodesMap[0xfe] = instr__CP_NN
 	/* RST 38 */
@@ -643,22 +621,22 @@ func initOpcodes() {
 	OpcodesMap[SHIFT_0xCB+0x2e] = instrCB__SRA_iHL
 	/* SRA A */
 	OpcodesMap[SHIFT_0xCB+0x2f] = instrCB__SRA_A
-	/* SLL B */
-	OpcodesMap[SHIFT_0xCB+0x30] = instrCB__SLL_B
-	/* SLL C */
-	OpcodesMap[SHIFT_0xCB+0x31] = instrCB__SLL_C
-	/* SLL D */
-	OpcodesMap[SHIFT_0xCB+0x32] = instrCB__SLL_D
-	/* SLL E */
-	OpcodesMap[SHIFT_0xCB+0x33] = instrCB__SLL_E
-	/* SLL H */
-	OpcodesMap[SHIFT_0xCB+0x34] = instrCB__SLL_H
-	/* SLL L */
-	OpcodesMap[SHIFT_0xCB+0x35] = instrCB__SLL_L
-	/* SLL (HL) */
-	OpcodesMap[SHIFT_0xCB+0x36] = instrCB__SLL_iHL
-	/* SLL A */
-	OpcodesMap[SHIFT_0xCB+0x37] = instrCB__SLL_A
+	/* SWAP B */
+	OpcodesMap[SHIFT_0xCB+0x30] = instrCB__SWAP_B
+	/* SWAP C */
+	OpcodesMap[SHIFT_0xCB+0x31] = instrCB__SWAP_C
+	/* SWAP D */
+	OpcodesMap[SHIFT_0xCB+0x32] = instrCB__SWAP_D
+	/* SWAP E */
+	OpcodesMap[SHIFT_0xCB+0x33] = instrCB__SWAP_E
+	/* SWAP H */
+	OpcodesMap[SHIFT_0xCB+0x34] = instrCB__SWAP_H
+	/* SWAP L */
+	OpcodesMap[SHIFT_0xCB+0x35] = instrCB__SWAP_L
+	/* SWAP (HL) */
+	OpcodesMap[SHIFT_0xCB+0x36] = instrCB__SWAP_iHL
+	/* SWAP A */
+	OpcodesMap[SHIFT_0xCB+0x37] = instrCB__SWAP_A
 	/* SRL B */
 	OpcodesMap[SHIFT_0xCB+0x38] = instrCB__SRL_B
 	/* SRL C */
