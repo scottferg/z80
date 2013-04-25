@@ -2328,7 +2328,7 @@ func instr__LD_SP_NNNN(z80 *Z80) {
 /* LDD (HL),A */
 func instr__LDD_iHL_A(z80 *Z80) {
 	z80.memory.WriteByte(z80.HL(), z80.A)
-	z80.IncHL()
+	z80.DecHL()
 }
 
 /* LD (nnnn),A */
