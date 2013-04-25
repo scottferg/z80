@@ -2204,6 +2204,12 @@ func instr__LD_HL_NNNN(z80 *Z80) {
 	z80.SetHL(joinBytes(b2, b1))
 }
 
+/* LDI (HL),A */
+func instr__LDI_iHL_A(z80 *Z80) {
+	z80.memory.WriteByte(z80.HL(), z80.A)
+	z80.IncHL()
+}
+
 /* INC HL */
 func instr__INC_HL(z80 *Z80) {
 	z80.memory.ContendReadNoMreq_loop(z80.IR(), 1, 2)
@@ -2263,6 +2269,13 @@ func instr__ADD_HL_HL(z80 *Z80) {
 	z80.add16(z80.hl, z80.HL())
 }
 
+/* LDI A,(HL) */
+func instr__LDI_A_iHL(z80 *Z80) {
+	val := z80.memory.ReadByte(z80.HL())
+	z80.memory.WriteByte(uint16(val&0xFF), z80.A)
+	z80.DecHL()
+}
+
 /* DEC HL */
 func instr__DEC_HL(z80 *Z80) {
 	z80.memory.ContendReadNoMreq_loop(z80.IR(), 1, 2)
@@ -2312,6 +2325,12 @@ func instr__LD_SP_NNNN(z80 *Z80) {
 	z80.SetSP(joinBytes(b2, b1))
 }
 
+/* LDD (HL),A */
+func instr__LDD_iHL_A(z80 *Z80) {
+	z80.memory.WriteByte(z80.HL(), z80.A)
+	z80.IncHL()
+}
+
 /* LD (nnnn),A */
 func instr__LD_iNNNN_A(z80 *Z80) {
 	var wordtemp uint16 = uint16(z80.memory.ReadByte(z80.PC()))
@@ -2319,6 +2338,16 @@ func instr__LD_iNNNN_A(z80 *Z80) {
 	wordtemp |= uint16(z80.memory.ReadByte(z80.PC())) << 8
 	z80.IncPC(1)
 	z80.memory.WriteByte(wordtemp, z80.A)
+}
+
+/* LD (nnnn),SP */
+func instr__LD_iNNNN_SP(z80 *Z80) {
+	var wordtemp uint16 = uint16(z80.memory.ReadByte(z80.PC()))
+	z80.IncPC(1)
+	wordtemp |= uint16(z80.memory.ReadByte(z80.PC())) << 8
+	z80.IncPC(1)
+	z80.memory.WriteByte(wordtemp, byte(z80.SP()&0xFF))
+	z80.memory.WriteByte(wordtemp+1, byte((z80.SP()>>8)&0xFF))
 }
 
 /* INC SP */
@@ -2374,6 +2403,13 @@ func instr__JR_C_OFFSET(z80 *Z80) {
 func instr__ADD_HL_SP(z80 *Z80) {
 	z80.memory.ContendReadNoMreq_loop(z80.IR(), 1, 7)
 	z80.add16(z80.hl, z80.SP())
+}
+
+/* LDD A,(HL) */
+func instr__LDD_A_iHL(z80 *Z80) {
+	val := z80.memory.ReadByte(z80.HL())
+	z80.memory.WriteByte(uint16(val&0xFF), z80.A)
+	z80.DecHL()
 }
 
 /* LD A,(nnnn) */
@@ -2683,6 +2719,12 @@ func instr__HALT(z80 *Z80) {
 	z80.Halted = true
 	z80.DecPC(1)
 	return
+}
+
+/* STOP */
+func instr__STOP(z80 *Z80) {
+	// TODO
+	panic("Unfinished opcode!")
 }
 
 /* LD (HL),A */
@@ -3243,6 +3285,12 @@ func instr__RET_C(z80 *Z80) {
 	}
 }
 
+/* RETI */
+func instr__RETI(z80 *Z80) {
+	// TODO
+	panic("Unfinished opcode!")
+}
+
 /* JP C,nnnn */
 func instr__JP_C_NNNN(z80 *Z80) {
 	if (z80.F & FLAG_C) != 0 {
@@ -3278,9 +3326,22 @@ func instr__RST_18(z80 *Z80) {
 	z80.rst(0x18)
 }
 
+/* LD (FF00+n),A */
+func instr__LD_iFF00N_A(z80 *Z80) {
+	addr := z80.memory.ReadByte(z80.PC())
+	z80.memory.WriteByte(0xFF00+uint16(addr)&0xFFFF, z80.A)
+	z80.IncPC(1)
+}
+
 /* POP HL */
 func instr__POP_HL(z80 *Z80) {
 	z80.L, z80.H = z80.pop16()
+}
+
+/* LD (FF00+C),A */
+func instr__LD_iFF00C_A(z80 *Z80) {
+	// TODO
+	panic("Unfinished opcode!")
 }
 
 /* PUSH HL */
@@ -3302,6 +3363,18 @@ func instr__RST_20(z80 *Z80) {
 	z80.rst(0x20)
 }
 
+/* ADD SP,dd */
+func instr__ADD_SP_DD(z80 *Z80) {
+	v := z80.memory.ReadByte(z80.PC())
+
+	if v > 0x7F {
+		v -= (^v + 1) & 0xFF
+	}
+
+	z80.IncPC(1)
+	z80.SetSP(z80.SP() + uint16(v))
+}
+
 /* JP HL */
 func instr__JP_HL(z80 *Z80) {
 	z80.SetPC(z80.HL()) /* NB: NOT INDIRECT! */
@@ -3320,9 +3393,24 @@ func instr__RST_28(z80 *Z80) {
 	z80.rst(0x28)
 }
 
+/* LD A,(FF00+n) */
+func instr__LD_A_iFF00N(z80 *Z80) {
+	offset := z80.memory.ReadByte(z80.PC())
+	a := z80.memory.ReadByte(0xFF00 + uint16(offset)&0xFFFF)
+
+	z80.IncPC(1)
+	z80.A = a
+}
+
 /* POP AF */
 func instr__POP_AF(z80 *Z80) {
 	z80.F, z80.A = z80.pop16()
+}
+
+/* LD, A(FF00+C) */
+func instr__LD_A_iFF00C(z80 *Z80) {
+	// TODO
+	panic("Unfinished opcode!")
 }
 
 /* DI */
@@ -3347,6 +3435,12 @@ func instr__OR_NN(z80 *Z80) {
 func instr__RST_30(z80 *Z80) {
 	z80.memory.ContendReadNoMreq(z80.IR(), 1)
 	z80.rst(0x30)
+}
+
+/* LD HL,SP+dd */
+func instr__LD_HL_SPDD(z80 *Z80) {
+	// TODO
+	panic("Unfinished opcode!")
 }
 
 /* LD SP,HL */
@@ -3633,6 +3727,86 @@ func instrCB__SRA_iHL(z80 *Z80) {
 /* SRA A */
 func instrCB__SRA_A(z80 *Z80) {
 	z80.A = z80.sra(z80.A)
+}
+
+/* SWAP B */
+func instrCB__SWAP_B(z80 *Z80) {
+	z80.B = ((z80.B & 0xF) << 4) | ((z80.B & 0xF0) >> 4)
+	if z80.B > 0 {
+		z80.F = 0
+	} else {
+		z80.F = 0x80
+	}
+}
+
+/* SWAP C */
+func instrCB__SWAP_C(z80 *Z80) {
+	z80.C = ((z80.C & 0xF) << 4) | ((z80.C & 0xF0) >> 4)
+	if z80.C > 0 {
+		z80.F = 0
+	} else {
+		z80.F = 0x80
+	}
+}
+
+/* SWAP D */
+func instrCB__SWAP_D(z80 *Z80) {
+	z80.D = ((z80.D & 0xF) << 4) | ((z80.D & 0xF0) >> 4)
+	if z80.D > 0 {
+		z80.F = 0
+	} else {
+		z80.F = 0x80
+	}
+}
+
+/* SWAP E */
+func instrCB__SWAP_E(z80 *Z80) {
+	z80.E = ((z80.E & 0xF) << 4) | ((z80.E & 0xF0) >> 4)
+	if z80.E > 0 {
+		z80.F = 0
+	} else {
+		z80.F = 0x80
+	}
+}
+
+/* SWAP H */
+func instrCB__SWAP_H(z80 *Z80) {
+	z80.H = ((z80.H & 0xF) << 4) | ((z80.H & 0xF0) >> 4)
+	if z80.H > 0 {
+		z80.F = 0
+	} else {
+		z80.F = 0x80
+	}
+}
+
+/* SWAP L */
+func instrCB__SWAP_L(z80 *Z80) {
+	z80.L = ((z80.L & 0xF) << 4) | ((z80.L & 0xF0) >> 4)
+	if z80.L > 0 {
+		z80.F = 0
+	} else {
+		z80.F = 0x80
+	}
+}
+
+/* SWAP (HL) */
+func instrCB__SWAP_iHL(z80 *Z80) {
+	z80.SetHL(((z80.HL() & 0xF) << 4) | ((z80.HL() & 0xF0) >> 4))
+	if z80.HL() > 0 {
+		z80.F = 0
+	} else {
+		z80.F = 0x80
+	}
+}
+
+/* SWAP A */
+func instrCB__SWAP_A(z80 *Z80) {
+	z80.A = ((z80.A & 0xF) << 4) | ((z80.A & 0xF0) >> 4)
+	if z80.A > 0 {
+		z80.F = 0
+	} else {
+		z80.F = 0x80
+	}
 }
 
 /* SRL B */
