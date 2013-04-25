@@ -2724,7 +2724,7 @@ func instr__HALT(z80 *Z80) {
 /* STOP */
 func instr__STOP(z80 *Z80) {
 	// TODO
-	panic("Unfinished opcode!")
+	panic("STOP: Unfinished opcode!")
 }
 
 /* LD (HL),A */
@@ -3288,7 +3288,7 @@ func instr__RET_C(z80 *Z80) {
 /* RETI */
 func instr__RETI(z80 *Z80) {
 	// TODO
-	panic("Unfinished opcode!")
+	panic("RETI: Unfinished opcode!")
 }
 
 /* JP C,nnnn */
@@ -3340,8 +3340,7 @@ func instr__POP_HL(z80 *Z80) {
 
 /* LD (FF00+C),A */
 func instr__LD_iFF00C_A(z80 *Z80) {
-	// TODO
-	panic("Unfinished opcode!")
+	z80.memory.WriteByte(0xFF00+uint16(z80.C)&0xFFFF, z80.A)
 }
 
 /* PUSH HL */
@@ -3410,7 +3409,7 @@ func instr__POP_AF(z80 *Z80) {
 /* LD, A(FF00+C) */
 func instr__LD_A_iFF00C(z80 *Z80) {
 	// TODO
-	panic("Unfinished opcode!")
+	panic("LD_A_iFF00C: Unfinished opcode!")
 }
 
 /* DI */
@@ -3440,7 +3439,7 @@ func instr__RST_30(z80 *Z80) {
 /* LD HL,SP+dd */
 func instr__LD_HL_SPDD(z80 *Z80) {
 	// TODO
-	panic("Unfinished opcode!")
+	panic("LD_HL_SPDD: Unfinished opcode!")
 }
 
 /* LD SP,HL */
