@@ -12,7 +12,7 @@ the following conditions:
 
 The above copyright notice and this permission notice shall be
 included in all copies or substantial portions of the Software.
-8	 
+8
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -2328,7 +2328,7 @@ func instr__RET_C(z80 *Z80) {
 
 /* RETI */
 func instr__RETI(z80 *Z80) {
-	z80.IFF1, z80.IFF2 = 1, 1
+    z80.IME = 1
 	z80.interruptsEnabledAt = int(z80.Tstates)
 	z80.ret()
 }
@@ -2453,7 +2453,7 @@ func instr__LD_A_iFF00C(z80 *Z80) {
 
 /* DI */
 func instr__DI(z80 *Z80) {
-	z80.IFF1, z80.IFF2 = 0, 0
+	z80.IME = 0
 }
 
 /* PUSH AF */
@@ -2491,7 +2491,7 @@ func instr__LD_SP_HL(z80 *Z80) {
 func instr__EI(z80 *Z80) {
 	/* Interrupts are not accepted immediately after an EI, but are
 	   accepted after the next instruction */
-	z80.IFF1, z80.IFF2 = 1, 1
+	z80.IME = 1
 	z80.interruptsEnabledAt = int(z80.Tstates)
 	// eventAdd(z80.Tstates + 1, z80InterruptEvent)
 }

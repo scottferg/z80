@@ -28,6 +28,10 @@ The z80 package implements a Zilog Z80 emulator.
 */
 package z80
 
+import (
+	"fmt"
+)
+
 // The flags
 const FLAG_C = 0x01
 const FLAG_N = 0x02
@@ -39,8 +43,15 @@ const FLAG_5 = 0x20
 const FLAG_Z = 0x40
 const FLAG_S = 0x80
 
+// Interrupt types
+const IrqVBlank = 0x0040
+const IrqStat = 0x0048
+const IrqTimer = 0x0050
+const IrqSerial = 0x0058
+const IrqJoypad = 0x0060
+
 var (
-	OpcodesMap [1536]func(z80 *Z80)
+	OpcodesMap    [1536]func(z80 *Z80)
 	OpcodesDisMap [1536]func(memory MemoryReader, address uint16, shift int) (string, uint16, int)
 )
 
@@ -79,7 +90,7 @@ type Z80 struct {
 	A, F, B, C, D, E, H, L         byte
 	A_, F_, B_, C_, D_, E_, H_, L_ byte
 	IXH, IXL, IYH, IYL             byte
-	I, IFF1, IFF2, IM              byte
+	I, IM, IME                     byte
 
 	// The highest bit (bit 7) of the R register
 	R7 byte
@@ -106,8 +117,8 @@ type Z80 struct {
 
 	interruptsEnabledAt int
 
-	memory          MemoryAccessor
-	ports           PortAccessor
+	memory MemoryAccessor
+	ports  PortAccessor
 
 	rzxInstructionsOffset int
 }
@@ -133,10 +144,11 @@ func (z80 *Z80) Reset() {
 	z80.A_, z80.F_, z80.B_, z80.C_, z80.D_, z80.E_, z80.H_, z80.L_ = 0, 0, 0, 0, 0, 0, 0, 0
 	z80.IXH, z80.IXL, z80.IYH, z80.IYL = 0, 0, 0, 0
 
-	z80.sp, z80.I, z80.R, z80.R7, z80.pc, z80.IFF1, z80.IFF2, z80.IM = 0, 0, 0, 0, 0, 0, 0, 0
+	z80.sp, z80.I, z80.R, z80.R7, z80.pc, z80.IM = 0, 0, 0, 0, 0, 0
 
 	z80.Tstates = 0
 
+	z80.IME = 1
 	z80.Halted = false
 	z80.interruptsEnabledAt = 0
 }
@@ -150,16 +162,19 @@ func joinBytes(h, l byte) uint16 {
 
 // Interrupt process a Z80 maskable interrupt
 func (z80 *Z80) Interrupt() {
-	if z80.IFF1 != 0 {
+	interruptsEnabled := z80.memory.ReadByte(0xFFFF)
+	interruptFlag := z80.memory.ReadByte(0xFF0F)
+
+	if z80.IME != 0 && interruptsEnabled != 0 && interruptFlag != 0 {
 		if z80.Halted {
 			z80.pc++
 			z80.Halted = false
 		}
 
+		z80.IME = 0
 		z80.Tstates += 7
 
 		z80.R = (z80.R + 1) & 0x7f
-		z80.IFF1, z80.IFF2 = 0, 0
 
 		// push PC
 		{
@@ -171,46 +186,33 @@ func (z80 *Z80) Interrupt() {
 			z80.memory.WriteByte(z80.sp, pcl)
 		}
 
-		switch z80.IM {
-		case 0, 1:
-			z80.pc = 0x0038
+		ifired := interruptsEnabled & interruptFlag
 
-		case 2:
-			var inttemp uint16 = (uint16(z80.I) << 8) | 0xff
-			pcl := z80.memory.ReadByte(inttemp)
-			inttemp++
-			pch := z80.memory.ReadByte(inttemp)
-			z80.pc = joinBytes(pch, pcl)
-
+		switch {
+		case ifired&0x1 == 0x1:
+			z80.memory.WriteByte(0xFF0F, interruptFlag&0xFE)
+			fmt.Println("Vblank IRQ")
+			z80.pc = IrqVBlank
+		case ifired&0x2 == 0x2:
+			z80.memory.WriteByte(0xFF0F, interruptFlag&0xFD)
+			fmt.Println("STAT IRQ")
+			z80.pc = IrqStat
+		case ifired&0x4 == 0x4:
+			z80.memory.WriteByte(0xFF0F, interruptFlag&0xFB)
+			fmt.Println("Timer IRQ")
+			z80.pc = IrqTimer
+		case ifired&0x8 == 0x8:
+			z80.memory.WriteByte(0xFF0F, interruptFlag&0xF7)
+			fmt.Println("Serial IRQ")
+			z80.pc = IrqSerial
+		case ifired&0x10 == 0x10:
+			z80.memory.WriteByte(0xFF0F, interruptFlag&0xEF)
+			fmt.Println("Joypad IRQ")
+			z80.pc = IrqJoypad
 		default:
-			panic("Unknown interrupt mode")
+			z80.IME = 1
 		}
 	}
-}
-
-// Process a Z80 non-maskable interrupt.
-func (z80 *Z80) NonMaskableInterrupt() {
-	if z80.Halted {
-		z80.pc++
-		z80.Halted = false
-	}
-
-	z80.Tstates += 7
-
-	z80.R = (z80.R + 1) & 0x7f
-	z80.IFF1, z80.IFF2 = 0, 0
-
-	// push PC
-	{
-		pch, pcl := splitWord(z80.pc)
-
-		z80.sp--
-		z80.memory.WriteByte(z80.sp, pch)
-		z80.sp--
-		z80.memory.WriteByte(z80.sp, pcl)
-	}
-
-	z80.pc = 0x0066
 }
 
 func ternOpB(cond bool, ret1, ret2 byte) byte {
